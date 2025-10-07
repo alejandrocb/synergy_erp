@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import PurchaseDocumentList from "../components/purchases/PurchaseDocumentList";
 import PurchaseDocumentForm from "../components/purchases/PurchaseDocumentForm";
+import { reserveDocumentNumber } from "@/services/documentSeriesService";
 
 export default function PurchaseDeliveries() {
   const [documents, setDocuments] = useState([]);
@@ -33,20 +34,22 @@ export default function PurchaseDeliveries() {
   };
 
   const getNextDocumentNumber = async (documentDate) => {
-    const series = await DocumentSeries.filter({ document_type: "albaran_compra", is_active: true });
-    if (series.length === 0) {
-      alert("No hay series activas para albaranes de compra. Por favor, configure una serie primero.");
+    try {
+      const { documentNumber } = await reserveDocumentNumber(DocumentSeries, {
+        documentDate,
+        documentType: "albaran_compra",
+      });
+
+      return documentNumber;
+    } catch (error) {
+      if (error.code === "NO_ACTIVE_SERIES") {
+        alert("No hay series activas para albaranes de compra. Por favor, configure una serie primero.");
+      } else {
+        console.error("Error generating purchase delivery number", error);
+        alert("No se pudo generar el número de documento. Inténtelo de nuevo.");
+      }
       return null;
     }
-    
-    const activeSeries = series[0];
-    const nextNumber = activeSeries.last_number + 1;
-    const year = new Date(documentDate).getFullYear();
-    const documentNumber = `${activeSeries.prefix}-${year}-${String(nextNumber).padStart(5, '0')}`;
-    
-    await DocumentSeries.update(activeSeries.id, { last_number: nextNumber });
-    
-    return documentNumber;
   };
 
   const handleSave = async (documentData, lines) => {
