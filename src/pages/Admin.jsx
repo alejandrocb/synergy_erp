@@ -1,39 +1,36 @@
 import React, { useState, useEffect } from "react";
-import { User } from "@/api/entities";
-import { CompanySettings } from "@/api/entities";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Shield, Users as UsersIcon, Settings } from "lucide-react";
 import UserManagement from "../components/admin/UserManagement";
 import ModuleSettings from "../components/admin/ModuleSettings";
+import { useAuth } from "@/context/AuthContext.jsx";
 
 export default function Admin() {
   const navigate = useNavigate();
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading } = useAuth();
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    const checkAccess = async () => {
-      try {
-        const user = await User.me();
-        setCurrentUser(user);
-        
-        if (user.role !== 'admin') {
-          navigate(createPageUrl("Dashboard"));
-          return;
-        }
-      } catch (error) {
-        navigate(createPageUrl("Dashboard"));
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (loading) {
+      return;
+    }
 
-    checkAccess();
-  }, [navigate]);
+    if (!user) {
+      navigate('/login');
+      return;
+    }
 
-  if (loading) {
+    if (user.role !== 'admin') {
+      navigate(createPageUrl("Dashboard"));
+      return;
+    }
+
+    setChecking(false);
+  }, [user, loading, navigate]);
+
+  if (loading || checking) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
@@ -41,7 +38,7 @@ export default function Admin() {
     );
   }
 
-  if (!currentUser || currentUser.role !== 'admin') {
+  if (!user || user.role !== 'admin') {
     return null;
   }
 

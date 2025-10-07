@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { User } from "@/api/entities";
 import { CompanySettings } from "@/api/entities";
+import { useAuth } from "@/context/AuthContext.jsx";
 import {
   Package,
   Users,
@@ -34,7 +34,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 export default function Layout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser, logout } = useAuth();
   const [enabledModules, setEnabledModules] = useState({
     productos: true,
     clientes: true,
@@ -49,14 +49,11 @@ export default function Layout({ children }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    loadUserAndSettings();
-  }, []);
+    loadSettings();
+  }, [currentUser]);
 
-  const loadUserAndSettings = async () => {
+  const loadSettings = async () => {
     try {
-      const user = await User.me();
-      setCurrentUser(user);
-      
       const settings = await CompanySettings.list();
       const modulesConfig = {};
       settings.forEach(setting => {
@@ -70,12 +67,13 @@ export default function Layout({ children }) {
         setEnabledModules(prev => ({ ...prev, ...modulesConfig }));
       }
     } catch (error) {
-      console.error("Error loading user:", error);
+      console.error("Error loading settings:", error);
     }
   };
 
   const handleLogout = async () => {
-    await User.logout();
+    await logout();
+    navigate('/login');
   };
 
   const menuSections = [

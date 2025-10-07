@@ -1,5 +1,5 @@
 {
-  "name": "base44-app",
+  "name": "synergy-erp",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -11,7 +11,6 @@
     "test": "NODE_ENV=test node --test"
   },
   "dependencies": {
-    "@base44/sdk": "^0.1.2",
     "@hookform/resolvers": "^4.1.2",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-alert-dialog": "^1.1.6",
