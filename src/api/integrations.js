@@ -1,26 +1,25 @@
-import { base44 } from './base44Client';
+import { base44 } from './base44Client.js';
 
+export function extractIntegrationBindings(client = base44) {
+  return {
+    Core: client.integrations.Core,
+    InvokeLLM: client.integrations.Core.InvokeLLM,
+    SendEmail: client.integrations.Core.SendEmail,
+    UploadFile: client.integrations.Core.UploadFile,
+    GenerateImage: client.integrations.Core.GenerateImage,
+    ExtractDataFromUploadedFile: client.integrations.Core.ExtractDataFromUploadedFile,
+    CreateFileSignedUrl: client.integrations.Core.CreateFileSignedUrl,
+    UploadPrivateFile: client.integrations.Core.UploadPrivateFile,
+  };
+}
 
+const bindings = extractIntegrationBindings();
 
-
-export const Core = base44.integrations.Core;
-
-export const InvokeLLM = base44.integrations.Core.InvokeLLM;
-
-export const SendEmail = base44.integrations.Core.SendEmail;
-
-export const UploadFile = base44.integrations.Core.UploadFile;
-
-export const GenerateImage = base44.integrations.Core.GenerateImage;
-
-export const ExtractDataFromUploadedFile = base44.integrations.Core.ExtractDataFromUploadedFile;
-
-export const CreateFileSignedUrl = base44.integrations.Core.CreateFileSignedUrl;
-
-export const UploadPrivateFile = base44.integrations.Core.UploadPrivateFile;
-
-
-
-
-
-
+export const Core = bindings.Core;
+export const InvokeLLM = bindings.InvokeLLM;
+export const SendEmail = bindings.SendEmail;
+export const UploadFile = bindings.UploadFile;
+export const GenerateImage = bindings.GenerateImage;
+export const ExtractDataFromUploadedFile = bindings.ExtractDataFromUploadedFile;
+export const CreateFileSignedUrl = bindings.CreateFileSignedUrl;
+export const UploadPrivateFile = bindings.UploadPrivateFile;
