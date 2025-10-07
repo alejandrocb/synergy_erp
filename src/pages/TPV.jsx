@@ -5,7 +5,7 @@ import { Customer } from "@/api/entities";
 import { Product } from "@/api/entities";
 import { DocumentSeries } from "@/api/entities";
 import { PointOfSale } from "@/api/entities";
-import { User } from "@/api/entities";
+import { useAuth } from "@/context/AuthContext.jsx";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { reserveDocumentNumber } from "@/services/documentSeriesService";
 
 export default function TPV() {
+  const { user: currentUser } = useAuth();
   const [pointOfSale, setPointOfSale] = useState(null);
   const [pointsOfSale, setPointsOfSale] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -98,7 +99,6 @@ export default function TPV() {
 
   const getNextDocumentNumber = async (documentType, documentDate) => {
     try {
-      const currentUser = await User.me();
       let seriesId = null;
 
       if (pointOfSale) {
@@ -112,7 +112,7 @@ export default function TPV() {
         seriesId = selectedCustomer.custom_document_series_id;
       }
 
-      if (!seriesId && currentUser.custom_document_series_id) {
+      if (!seriesId && currentUser?.custom_document_series_id) {
         seriesId = currentUser.custom_document_series_id;
       }
 

@@ -5,7 +5,7 @@ import { Customer } from "@/api/entities";
 import { Product } from "@/api/entities";
 import { DocumentSeries } from "@/api/entities";
 import { PointOfSale } from "@/api/entities";
-import { User } from "@/api/entities";
+import { useAuth } from "@/context/AuthContext.jsx";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import DocumentList from "../components/sales/DocumentList";
@@ -13,6 +13,7 @@ import SaleDocumentForm from "../components/sales/SaleDocumentForm";
 import { reserveDocumentNumber } from "@/services/documentSeriesService";
 
 export default function SalesSimplified() {
+  const { user: currentUser } = useAuth();
   const [documents, setDocuments] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingDocument, setEditingDocument] = useState(null);
@@ -36,7 +37,6 @@ export default function SalesSimplified() {
 
   const getNextDocumentNumber = async (documentData) => {
     try {
-      const currentUser = await User.me();
       const documentDate = documentData.document_date;
       let seriesId = null;
 
@@ -54,7 +54,7 @@ export default function SalesSimplified() {
         }
       }
 
-      if (!seriesId && currentUser.custom_document_series_id) {
+      if (!seriesId && currentUser?.custom_document_series_id) {
         seriesId = currentUser.custom_document_series_id;
       }
 

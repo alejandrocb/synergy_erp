@@ -1,36 +1,27 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { extractEntityBindings } from '../../../src/api/entities.js';
+import { Product, User } from '../../../src/api/entities.js';
+import { resetDatabase } from '../../../src/api/localDb.js';
 
-test('extractEntityBindings re-exports SDK entities and auth helpers', () => {
-  const stubEntities = {
-    Product: { name: 'Product' },
-    Warehouse: { name: 'Warehouse' },
-    Customer: { name: 'Customer' },
-    Supplier: { name: 'Supplier' },
-    CompanySettings: { name: 'CompanySettings' },
-    SaleDocument: { name: 'SaleDocument' },
-    SaleLine: { name: 'SaleLine' },
-    PurchaseDocument: { name: 'PurchaseDocument' },
-    PurchaseLine: { name: 'PurchaseLine' },
-    StockMovement: { name: 'StockMovement' },
-    WarehouseTransfer: { name: 'WarehouseTransfer' },
-    TransferLine: { name: 'TransferLine' },
-    DocumentSeries: { name: 'DocumentSeries' },
-    PointOfSale: { name: 'PointOfSale' },
-    TaxRate: { name: 'TaxRate' },
-    ProductStock: { name: 'ProductStock' },
-  };
+test.beforeEach(() => {
+  resetDatabase();
+  globalThis.__SYNERGY_AUTH_MEMORY__ = new Map();
+});
 
-  const stubAuth = { me: () => {} };
+test('Product.list devuelve el catálogo inicial con campos clave', async () => {
+  const products = await Product.list();
+  assert.ok(Array.isArray(products));
+  assert.ok(products.length > 0);
+  assert.ok(products[0].code);
+  assert.ok(products[0].name);
+  assert.equal(typeof products[0].sale_price, 'number');
+});
 
-  const bindings = extractEntityBindings({
-    entities: stubEntities,
-    auth: stubAuth,
+test('User.list no expone hashes ni metadatos sensibles', async () => {
+  const users = await User.list();
+  assert.ok(users.length >= 1);
+  users.forEach((user) => {
+    assert.ok(!('password_hash' in user), 'password hash should not be exposed');
+    assert.ok(user.email);
   });
-
-  Object.entries(stubEntities).forEach(([key, value]) => {
-    assert.equal(bindings[key], value);
-  });
-  assert.equal(bindings.User, stubAuth);
 });
