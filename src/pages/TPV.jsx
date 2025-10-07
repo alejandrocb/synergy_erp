@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Trash2, Plus, Minus, CreditCard, Banknote, Clock } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { reserveDocumentNumber } from "@/services/documentSeriesService";
 
 export default function TPV() {
   const [pointOfSale, setPointOfSale] = useState(null);
@@ -96,49 +97,46 @@ export default function TPV() {
   };
 
   const getNextDocumentNumber = async (documentType, documentDate) => {
-    const currentUser = await User.me();
-    let seriesId = null;
+    try {
+      const currentUser = await User.me();
+      let seriesId = null;
 
-    // Jerarquía: Punto de Venta > Cliente > Usuario > Por defecto
-    if (pointOfSale) {
-      const pos = await PointOfSale.filter({ id: pointOfSale });
-      if (pos[0]?.custom_document_series_id) {
-        seriesId = pos[0].custom_document_series_id;
+      if (pointOfSale) {
+        const pos = await PointOfSale.filter({ id: pointOfSale });
+        if (pos[0]?.custom_document_series_id) {
+          seriesId = pos[0].custom_document_series_id;
+        }
       }
-    }
 
-    if (!seriesId && selectedCustomer?.custom_document_series_id) {
-      seriesId = selectedCustomer.custom_document_series_id;
-    }
+      if (!seriesId && selectedCustomer?.custom_document_series_id) {
+        seriesId = selectedCustomer.custom_document_series_id;
+      }
 
-    if (!seriesId && currentUser.custom_document_series_id) {
-      seriesId = currentUser.custom_document_series_id;
-    }
+      if (!seriesId && currentUser.custom_document_series_id) {
+        seriesId = currentUser.custom_document_series_id;
+      }
 
-    let series;
-    if (seriesId) {
-      series = await DocumentSeries.filter({ id: seriesId });
-    } else {
       const seriesType = documentType === "albaran" ? "albaran_venta" : "factura_simplificada";
-      series = await DocumentSeries.filter({ 
-        document_type: seriesType, 
-        is_default: true, 
-        is_active: true 
-      });
-    }
 
-    if (series.length === 0) {
-      throw new Error(`No hay series configuradas para ${documentType}`);
+      const { documentNumber } = await reserveDocumentNumber(DocumentSeries, {
+        documentDate,
+        documentType: seriesId ? undefined : seriesType,
+        query: seriesId
+          ? { id: seriesId }
+          : {
+              document_type: seriesType,
+              is_default: true,
+              is_active: true,
+            },
+      });
+
+      return documentNumber;
+    } catch (error) {
+      if (error.code === "NO_ACTIVE_SERIES") {
+        throw new Error(`No hay series configuradas para ${documentType}`);
+      }
+      throw error;
     }
-    
-    const activeSeries = series[0];
-    const nextNumber = activeSeries.last_number + 1;
-    const year = new Date(documentDate).getFullYear();
-    const documentNumber = `${activeSeries.prefix}-${year}-${String(nextNumber).padStart(5, '0')}`;
-    
-    await DocumentSeries.update(activeSeries.id, { last_number: nextNumber });
-    
-    return documentNumber;
   };
 
   const handleCheckout = async () => {

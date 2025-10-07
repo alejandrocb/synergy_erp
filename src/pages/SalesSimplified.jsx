@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import DocumentList from "../components/sales/DocumentList";
 import SaleDocumentForm from "../components/sales/SaleDocumentForm";
+import { reserveDocumentNumber } from "@/services/documentSeriesService";
 
 export default function SalesSimplified() {
   const [documents, setDocuments] = useState([]);
@@ -34,56 +35,51 @@ export default function SalesSimplified() {
   };
 
   const getNextDocumentNumber = async (documentData) => {
-    const currentUser = await User.me();
-    const documentDate = documentData.document_date;
-    let seriesId = null;
+    try {
+      const currentUser = await User.me();
+      const documentDate = documentData.document_date;
+      let seriesId = null;
 
-    // 1. Verificar si hay punto de venta especificado y tiene serie personalizada
-    if (documentData.point_of_sale_id) {
-      const pos = await PointOfSale.filter({ id: documentData.point_of_sale_id });
-      if (pos[0]?.custom_document_series_id) {
-        seriesId = pos[0].custom_document_series_id;
+      if (documentData.point_of_sale_id) {
+        const pos = await PointOfSale.filter({ id: documentData.point_of_sale_id });
+        if (pos[0]?.custom_document_series_id) {
+          seriesId = pos[0].custom_document_series_id;
+        }
       }
-    }
 
-    // 2. Si no, verificar si el cliente tiene serie personalizada
-    if (!seriesId && documentData.customer_id) {
-      const customer = await Customer.filter({ id: documentData.customer_id });
-      if (customer[0]?.custom_document_series_id) {
-        seriesId = customer[0].custom_document_series_id;
+      if (!seriesId && documentData.customer_id) {
+        const customer = await Customer.filter({ id: documentData.customer_id });
+        if (customer[0]?.custom_document_series_id) {
+          seriesId = customer[0].custom_document_series_id;
+        }
       }
-    }
 
-    // 3. Si no, verificar si el usuario tiene serie personalizada
-    if (!seriesId && currentUser.custom_document_series_id) {
-      seriesId = currentUser.custom_document_series_id;
-    }
+      if (!seriesId && currentUser.custom_document_series_id) {
+        seriesId = currentUser.custom_document_series_id;
+      }
 
-    // 4. Si no, usar la serie por defecto
-    let series;
-    if (seriesId) {
-      series = await DocumentSeries.filter({ id: seriesId });
-    } else {
-      series = await DocumentSeries.filter({ 
-        document_type: "factura_simplificada", 
-        is_default: true, 
-        is_active: true 
+      const { documentNumber } = await reserveDocumentNumber(DocumentSeries, {
+        documentDate,
+        documentType: seriesId ? undefined : "factura_simplificada",
+        query: seriesId
+          ? { id: seriesId }
+          : {
+              document_type: "factura_simplificada",
+              is_default: true,
+              is_active: true,
+            },
       });
-    }
 
-    if (series.length === 0) {
-      alert("No hay series configuradas para facturas simplificadas. Por favor, configure una serie primero.");
+      return documentNumber;
+    } catch (error) {
+      if (error.code === "NO_ACTIVE_SERIES") {
+        alert("No hay series configuradas para facturas simplificadas. Por favor, configure una serie primero.");
+      } else {
+        console.error("Error generating simplified invoice number", error);
+        alert("No se pudo generar el número de documento. Inténtelo de nuevo.");
+      }
       return null;
     }
-    
-    const activeSeries = series[0];
-    const nextNumber = activeSeries.last_number + 1;
-    const year = new Date(documentDate).getFullYear();
-    const documentNumber = `${activeSeries.prefix}-${year}-${String(nextNumber).padStart(5, '0')}`;
-    
-    await DocumentSeries.update(activeSeries.id, { last_number: nextNumber });
-    
-    return documentNumber;
   };
 
   const handleSave = async (documentData, lines) => {
