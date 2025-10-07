@@ -1,4 +1,5 @@
-const isTestEnv = process?.env?.NODE_ENV === 'test';
+const isTestEnv =
+  typeof process !== 'undefined' && process?.env?.NODE_ENV === 'test';
 
 function buildFallbackClient() {
   return {
